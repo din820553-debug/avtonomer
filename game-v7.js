@@ -1,0 +1,37 @@
+(function(){
+var letters=['А','В','Е','К','М','Н','О','Р','С','Т','У','Х'];
+var regions={'77':'Москва','177':'Москва','197':'Москва','199':'Москва','777':'Москва','797':'Москва','799':'Москва','50':'Московская область','150':'Московская область','190':'Московская область','750':'Московская область','790':'Московская область','78':'Санкт-Петербург','178':'Санкт-Петербург','198':'Санкт-Петербург','16':'Татарстан','116':'Татарстан','716':'Татарстан','23':'Краснодарский край','123':'Краснодарский край','54':'Новосибирская область','154':'Новосибирская область','66':'Свердловская область','196':'Свердловская область','74':'Челябинская область','174':'Челябинская область','774':'Челябинская область','61':'Ростовская область','161':'Ростовская область','63':'Самарская область','163':'Самарская область','52':'Нижегородская область','152':'Нижегородская область','59':'Пермский край','159':'Пермский край','38':'Иркутская область','138':'Иркутская область'};
+var countryData={RU:['🇷🇺','RUS','Россия'],DE:['🇩🇪','D','Германия'],US:['🇺🇸','USA','США'],GB:['🇬🇧','UK','Великобритания'],JP:['🇯🇵','JPN','Япония'],AE:['🇦🇪','UAE','ОАЭ'],FR:['🇫🇷','F','Франция'],IT:['🇮🇹','I','Италия'],NL:['🇳🇱','NL','Нидерланды'],CH:['🇨🇭','CH','Швейцария'],PL:['🇵🇱','PL','Польша'],KZ:['🇰🇿','KZ','Казахстан'],ES:['🇪🇸','E','Испания'],PT:['🇵🇹','P','Португалия'],AT:['🇦🇹','A','Австрия'],CZ:['🇨🇿','CZ','Чехия'],SE:['🇸🇪','S','Швеция'],NO:['🇳🇴','N','Норвегия'],FI:['🇫🇮','FIN','Финляндия'],TR:['🇹🇷','TR','Турция'],CN:['🇨🇳','CN','Китай'],KR:['🇰🇷','ROK','Южная Корея'],CA:['🇨🇦','CAN','Канада'],AU:['🇦🇺','AUS','Австралия'],BR:['🇧🇷','BR','Бразилия'],MX:['🇲🇽','MEX','Мексика']};
+var current=null,busy=false,state={balance:0,garage:[],rolls:0,best:0,legendary:0,specials:0,xp:0};
+try{var old=JSON.parse(localStorage.getItem('avtonomerSimple')||'null');if(old)state=Object.assign(state,old)}catch(e){}
+function el(id){return document.getElementById(id)}
+function pick(a){return a[Math.floor(Math.random()*a.length)]}
+function digits(n){var s='';while(n--)s+=Math.floor(Math.random()*10);return s}
+function latin(n){var a='ABCDEFGHJKLMNPRSTUVWXYZ',s='';while(n--)s+=a[Math.floor(Math.random()*a.length)];return s}
+function save(){try{localStorage.setItem('avtonomerSimple',JSON.stringify(state))}catch(e){}}
+function money(n){return Number(n).toLocaleString('ru-RU')+' ₽'}
+function make(){
+ var selected=el('country').value,keys=Object.keys(countryData),code=selected==='WORLD'?pick(keys):selected,d=countryData[code],text='',side=d[1],region='';
+ if(code==='RU'){var rk=Object.keys(regions);side=pick(rk);region=regions[side];var specialNums=['001','007','010','077','100','111','222','333','444','555','666','777','888','999'];var n=Math.random()<.16?pick(specialNums):String(Math.floor(Math.random()*999)+1).padStart(3,'0');text=pick(letters)+' '+n+' '+pick(letters)+pick(letters)}
+ else if(code==='JP'){text=pick(['品川','横浜','大阪','京都'])+' '+digits(3);side=digits(2)+'-'+digits(2)}
+ else if(code==='AE'){text=Math.random()<.2?String(Math.floor(Math.random()*99)+1):latin(1)+' '+digits(4);side='DUBAI'}
+ else if(code==='GB'){text=latin(2)+digits(2)+' '+latin(3)}
+ else if(code==='FR'){text=latin(2)+'-'+digits(3)+'-'+latin(2)}
+ else if(code==='ES'){text=digits(4)+' '+latin(3)}
+ else if(code==='TR'){text=digits(2)+' '+latin(2)+' '+digits(3)}
+ else{text=latin(3)+' '+digits(3)}
+ var nums=text.replace(/\D/g,''),tier=0;
+ if(/(\d)\1\1/.test(nums))tier=3;
+ if(/111|222|333|444|555|666|777|888|999/.test(nums))tier=4;
+ if(tier===0&&Math.random()<.22)tier=1;if(tier<2&&Math.random()<.08)tier=2;
+ var special=Math.random()<.035;if(special&&tier<3)tier=3;
+ var names=['Обычный','Красивый','Редкий','VIP','Легендарный'],classes=['common','nice','rare','vip','legend'],bases=[1500,10000,50000,200000,750000];
+ return{id:String(Date.now())+Math.random(),country:code,flag:d[0],countryName:d[2],plateCode:d[1],text:text,side:side,regionName:region,tier:tier,name:names[tier],cls:classes[tier],price:Math.round(bases[tier]*(.8+Math.random()*.4)/500)*500,special:special};
+}
+function show(x){el('num').textContent=x.text;el('reg').textContent=x.side;el('countryMark').textContent=x.flag+' '+x.plateCode;el('countryName').textContent=x.flag+' '+x.countryName+(x.regionName?' • '+x.regionName:'')+(x.special?' • СПЕЦНОМЕР':'');el('rarity').textContent=x.name+(x.special?' • СПЕЦ':'');el('rarity').className='rarity '+x.cls;el('value').textContent='≈ '+money(x.price)}
+function stats(){el('balance').textContent=money(state.balance);el('rolls').textContent=state.rolls;el('garageCount').textContent=state.garage.length;el('best').textContent=money(state.best);el('legendary').textContent=state.legendary;el('specials').textContent=state.specials;var lvl=1+Math.floor(state.xp/250);el('level').textContent='LVL '+lvl;el('xpText').textContent=(state.xp%250)+' / 250 XP';el('xpBar').style.width=((state.xp%250)/250*100)+'%';var seen={};state.garage.forEach(function(x){seen[x.country]=1});el('worldProgress').textContent=Object.keys(seen).length+' / '+Object.keys(countryData).length;el('progressBar').style.width=(Object.keys(seen).length/Object.keys(countryData).length*100)+'%'}
+function garage(){stats();var box=el('garage');if(!state.garage.length){box.innerHTML='<div class="empty">Пока пусто. Крути номер и оставляй лучшие здесь.</div>';return}box.innerHTML=state.garage.slice().reverse().map(function(x){return '<article class="item"><div class="countryTag">'+x.flag+' '+x.countryName+(x.regionName?' • '+x.regionName:'')+'</div><div class="miniPlate"><span>'+x.text+'</span><small>'+x.side+'</small></div><div class="row"><div><b class="'+x.cls+'">'+x.name+'</b><div class="price">'+money(x.price)+'</div></div><button class="tiny sellGarage" data-id="'+x.id+'">Продать</button></div></article>'}).join('');Array.prototype.forEach.call(document.querySelectorAll('.sellGarage'),function(b){b.onclick=function(){var id=this.getAttribute('data-id');for(var i=0;i<state.garage.length;i++)if(state.garage[i].id===id){state.balance+=state.garage[i].price;state.garage.splice(i,1);break}save();garage()}})}
+function roll(){if(busy)return;busy=true;var b=el('roll');b.disabled=true;b.textContent='⏳ КРУТИМ...';var i=0,t=setInterval(function(){show(make());i++;if(i>=9){clearInterval(t);current=make();show(current);state.rolls++;state.xp+=10+current.tier*15;state.best=Math.max(state.best,current.price);if(current.tier===4)state.legendary++;if(current.special)state.specials++;save();stats();el('keep').disabled=false;el('quickSell').disabled=false;b.disabled=false;b.textContent='⚡ КРУТИТЬ ЕЩЁ';busy=false}},70)}
+function init(){var r=el('roll');if(!r)return;r.onclick=roll;el('keep').onclick=function(){if(!current)return;state.garage.push(current);current=null;this.disabled=true;el('quickSell').disabled=true;save();garage()};el('quickSell').onclick=function(){if(!current)return;state.balance+=current.price;current=null;this.disabled=true;el('keep').disabled=true;save();garage()};el('country').onchange=function(){current=null;el('keep').disabled=true;el('quickSell').disabled=true;el('countryName').textContent=this.options[this.selectedIndex].text+' • готов к поиску'};garage()}
+if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
+})();
