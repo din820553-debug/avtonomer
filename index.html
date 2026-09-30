@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AVTONOMER — охота за номерами</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Inter,Arial,sans-serif;background:#0b0d12;color:#fff;min-height:100vh;display:grid;place-items:center}
+.app{width:min(920px,94vw);padding:28px}.top{display:flex;justify-content:space-between;gap:12px;align-items:center}.brand{font-weight:900;letter-spacing:2px}.money{background:#171b24;padding:10px 14px;border-radius:14px;color:#78ff9c;font-weight:800}
+.card{margin-top:20px;background:linear-gradient(145deg,#171b24,#10131a);border:1px solid #292f3b;border-radius:28px;padding:28px;text-align:center;box-shadow:0 20px 70px #0008}
+.muted{color:#8e98aa}.plate{margin:28px auto 14px;width:min(620px,100%);height:180px;background:#f7f7f3;color:#080808;border:8px solid #111;border-radius:18px;display:flex;align-items:center;justify-content:center;box-shadow:0 12px 35px #0008;overflow:hidden}
+.main{font-family:Arial Black,Arial,sans-serif;font-size:clamp(48px,10vw,92px);letter-spacing:3px;flex:1}.region{height:100%;min-width:145px;border-left:5px solid #111;display:flex;flex-direction:column;justify-content:center;font-weight:900;font-size:50px}.rus{font-size:21px;margin-top:5px}
+.value{font-size:28px;font-weight:900;margin:10px}.rarity{font-weight:800;color:#aab4c8}.actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+button{border:0;border-radius:16px;padding:16px 24px;font-weight:900;font-size:16px;cursor:pointer}.roll{background:#fff;color:#0b0d12}.keep{background:#2b7cff;color:white}.keep:disabled{opacity:.4}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;margin-top:18px}.item{background:#141821;border:1px solid #272d39;border-radius:16px;padding:14px}.mini{font-weight:900;font-size:20px}.price{color:#78ff9c;margin-top:5px;font-weight:800}
+@media(max-width:560px){.app{padding:14px}.card{padding:18px}.plate{height:120px;border-width:5px}.region{min-width:90px;font-size:32px}.rus{font-size:14px}.main{font-size:42px}.value{font-size:23px}}
+</style></head>
+<body><main class="app">
+<div class="top"><div class="brand">AVTONOMER</div><div class="money" id="money">Коллекция: 0 ₽</div></div>
+<section class="card"><div class="muted">ОХОТА ЗА КРАСИВЫМИ НОМЕРАМИ</div>
+<div class="plate"><div class="main" id="num">А 001 АА</div><div class="region"><span id="reg">77</span><span class="rus">RUS 🇷🇺</span></div></div>
+<div class="rarity" id="rarity">Редкий</div><div class="value" id="value">≈ 250 000 ₽</div>
+<div class="actions"><button class="roll" id="roll">Сгенерировать</button><button class="keep" id="keep">Забрать номер</button></div>
+<div class="muted" style="margin-top:14px">Стоимость условная и используется только как игровая механика.</div></section>
+<h2>Гараж</h2><div class="grid" id="garage"></div>
+</main>
+<script>
+const letters=['А','В','Е','К','М','Н','О','Р','С','Т','У','Х'],regions=[77,97,99,177,197,199,777,797,799,50,90,150,190,750,78,98,178,23,93,123,116,16,52,54,61,63,66,96,196,74,174,72,102];
+let current=null,garage=JSON.parse(localStorage.getItem('avtonomerGarage')||'[]');
+const el=id=>document.getElementById(id),fmt=n=>n.toLocaleString('ru-RU')+' ₽';
+function assess(d,l1,l2,l3){
+ let p=1500,r='Обычный';
+ const triple=d[0]===d[1]&&d[1]===d[2], mirror=d[0]===d[2], round=d==='100'||d==='500', low=+d<=9;
+ const sameLetters=l1===l2&&l2===l3;
+ if(mirror){p=18000;r='Красивый'} if(round){p=35000;r='Красивый'} if(triple){p=120000;r='Очень редкий'}
+ if(low){p=160000;r='Очень редкий'} if(sameLetters){p*=4;r='VIP'}
+ if(triple&&sameLetters){p=1500000;r='Легендарный'} if((d==='001'||d==='007')&&sameLetters){p=2200000;r='Легендарный'}
+ return {p,r};
+}
+function generate(){
+ let l1=letters[Math.random()*letters.length|0],l2=letters[Math.random()*letters.length|0],l3=letters[Math.random()*letters.length|0];
+ if(Math.random()<.13)l2=l3=l1;
+ let n=Math.random()<.08?[1,2,3,5,7,9,10,50,77,100,111,222,333,444,555,666,777,888,999][Math.random()*19|0]:(Math.random()*999|0)+1;
+ let d=String(n).padStart(3,'0'),reg=regions[Math.random()*regions.length|0],a=assess(d,l1,l2,l3);
+ current={text:l1+' '+d+' '+l2+l3,reg,p:a.p,r:a.r};
+ el('num').textContent=current.text;el('reg').textContent=reg;el('rarity').textContent=a.r;el('value').textContent='≈ '+fmt(a.p);
+ el('keep').disabled=false;
+}
+function render(){el('garage').innerHTML=garage.length?garage.slice().reverse().map(x=>'<div class="item"><div class="mini">'+x.text+' | '+x.reg+'</div><div>'+x.r+'</div><div class="price">'+fmt(x.p)+'</div></div>').join(''):'<div class="muted">Пока пусто. Лови первый красивый номер.</div>';el('money').textContent='Коллекция: '+fmt(garage.reduce((s,x)=>s+x.p,0))}
+el('roll').onclick=generate;el('keep').onclick=()=>{if(!current)return;garage.push(current);localStorage.setItem('avtonomerGarage',JSON.stringify(garage));el('keep').disabled=true;render()};render();generate();
+</script></body></html>
